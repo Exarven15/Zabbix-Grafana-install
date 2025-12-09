@@ -38,137 +38,134 @@ sudo apt install -y zabbix-server-mysql zabbix-frontend-php zabbix-apache-conf z
 ### 3.3 Sécurisation de MariaDB
 sudo mysql_secure_installation
 
+J’accepte les options recommandées (on va que tester pas de prod).
 
-J’accepte les options recommandées.
-
-3.4 Création de la base de données Zabbix
+---
+### 3.4 Création de la base de données Zabbix
+```bash
 sudo mysql -uroot -p
-
-
+```
 Dans l’interface MySQL :
-
+```SQL
 CREATE DATABASE zabbix CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 CREATE USER 'zabbix'@'localhost' IDENTIFIED BY 'ZabbixPass123!';
 GRANT ALL PRIVILEGES ON zabbix.* TO 'zabbix'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
+```
 
-3.5 Importation du schéma Zabbix
+---
+### 3.5 Importation du schéma Zabbix
+```bash
 zcat /usr/share/zabbix-sql-scripts/mysql/server.sql.gz | mysql -uzabbix -pZabbixPass123! zabbix
+```
 
-3.6 Configuration du serveur Zabbix
+---
+### 3.6 Configuration du serveur Zabbix
+```bash
 sudo nano /etc/zabbix/zabbix_server.conf
-
-
+```
 Je modifie la ligne suivante :
-
+```bash
 DBPassword=ZabbixPass123!
+```
 
-3.7 Activation des services
+---
+### 3.7 Activation des services
+```bash
 sudo systemctl enable zabbix-server zabbix-agent apache2 mariadb
 sudo systemctl restart zabbix-server zabbix-agent apache2 mariadb
+```
 
-4. Configuration du frontend Zabbix
-
+---
+## 4. Configuration du frontend Zabbix
 J’accède à l’interface web :
-
+```url
 http://<IP_VM>/zabbix
-
-
+```
 Dans l’assistant :
-
-Type de base : MySQL
-
-Hôte : localhost
-
-Nom : zabbix
-
-Utilisateur : zabbix
-
-Mot de passe : ZabbixPass123!
-
-Nom du serveur : LabZabbix
+- Type de base : MySQL
+- Hôte : localhost
+- Nom : zabbix
+- Utilisateur : zabbix
+- Mot de passe : ZabbixPass123!
+- Nom du serveur : LabZabbix
 
 Identifiants de connexion :
+- Admin / zabbix
 
-Admin / zabbix
-
-5. Installation de Grafana
-5.1 Ajout du dépôt officiel Grafana
+---
+## 5. Installation de Grafana
+### 5.1 Ajout du dépôt officiel Grafana
+```bash
 sudo wget -q -O /usr/share/keyrings/grafana.key https://packages.grafana.com/gpg.key
 echo "deb [signed-by=/usr/share/keyrings/grafana.key] https://packages.grafana.com/oss/deb stable main" | sudo tee /etc/apt/sources.list.d/grafana.list
 sudo apt update
-
-5.2 Installation et démarrage du service
+```
+---
+### 5.2 Installation et démarrage du service
+```bash
 sudo apt install grafana -y
 sudo systemctl enable grafana-server
 sudo systemctl start grafana-server
+```
 
-5.3 Accès à l’interface Grafana
+---
+### 5.3 Accès à l’interface Grafana
+```url
 http://<IP_VM>:3000
-
-
+```
 Identifiants par défaut :
-
+```bash
 admin / admin
-
-
+```
 Je définis ensuite mon nouveau mot de passe (ex : admin1).
 
-6. Intégration de Zabbix dans Grafana
-6.1 Installation du plugin Zabbix
+---
+## 6. Intégration de Zabbix dans Grafana
+### 6.1 Installation du plugin Zabbix
+```bash
 sudo grafana-cli plugins install alexanderzobnin-zabbix-app
 sudo systemctl restart grafana-server
+```
 
-6.2 Ajout de la datasource Zabbix
-
+---
+### 6.2 Ajout de la datasource Zabbix
 Dans Grafana :
-
-Configuration
-
-Data Sources
-
-Add data source
-
-Choix : Zabbix
-
-Paramètres :
-
-URL API Zabbix :
-
-http://localhost/zabbix/api_jsonrpc.php
-
+- Configuration
+- Data Sources
+- Add data source
+- Choix : Zabbix
+- Paramètres :
+- URL API Zabbix :
+- http://localhost/zabbix/api_jsonrpc.php
 
 Identifiants API :
-
-Login : Admin
-Password : zabbix
-
+- Login : Admin
+- Password : zabbix
 
 Je valide avec "Save & Test".
 
-7. Test du monitoring
-
+---
+## 7. Test du monitoring
 Je teste un incident en arrêtant l’agent Zabbix :
-
+```bash
 sudo systemctl stop zabbix-agent
-
-
-Zabbix affiche l’alerte dans Monitoring → Problems.
-
+```
+Zabbix affiche l’alerte dans Monitoring --> Problems.
 Je relance ensuite le service :
-
+```bash
 sudo systemctl start zabbix-agent
+```
 
-8. Mise en place d’un script de sauvegarde
-
+---
+## 8. Mise en place d’un script de sauvegarde
 Je crée un script automatisé :
-
+```bash
 sudo nano /usr/local/bin/backup_zabbix.sh
-
-
+```
 Contenu :
-
+```bash
 #!/bin/bash
 DATE=$(date +%F)
 BACKUP_DIR="/var/backups/zabbix"
@@ -176,27 +173,25 @@ mkdir -p $BACKUP_DIR
 mysqldump -uzabbix -pZabbixPass123! zabbix > $BACKUP_DIR/zabbix_$DATE.sql
 tar czf $BACKUP_DIR/zabbix_conf_$DATE.tar.gz /etc/zabbix /usr/share/zabbix
 find $BACKUP_DIR -type f -mtime +7 -delete
-
-
+```
 Activation :
-
+```bash
 sudo chmod +x /usr/local/bin/backup_zabbix.sh
 sudo crontab -e
-
-
+```
 Ajout dans cron :
-
+```bash
 0 3 * * * /usr/local/bin/backup_zabbix.sh
+```
 
-9. Vérification des mises à jour
-
+---
+## 9. Vérification des mises à jour
 Je crée un script permettant de vérifier les mises à jour Zabbix et Grafana.
-
+```bash
 sudo nano /usr/local/bin/check_updates.sh
-
-
+```
 Contenu :
-
+```bash
 #!/bin/bash
 echo "=== Zabbix ==="
 zabbix_server --version
@@ -205,35 +200,25 @@ apt list --upgradable 2>/dev/null | grep zabbix
 echo "=== Grafana ==="
 grafana-server -v
 apt list --upgradable 2>/dev/null | grep grafana
-
-
+```
 Activation :
-
+```bash
 sudo chmod +x /usr/local/bin/check_updates.sh
-
-
+```
 Exécution :
-
+```bash
 /usr/local/bin/check_updates.sh
+```
 
+---
 10. Conclusion
-
 Cette installation me permet de disposer d’un environnement complet de supervision :
-
-Zabbix installé et fonctionnel
-
-Base MariaDB configurée
-
-Interface web opérationnelle
-
-Grafana installé et intégré à Zabbix
-
-Plugin Zabbix pour Grafana
-
-Script de sauvegarde automatisé
-
-Script de vérification des mises à jour
-
-Tests de supervision validés
-
+- Zabbix installé et fonctionnel
+- Base MariaDB configurée
+- Interface web opérationnelle
+- Grafana installé et intégré à Zabbix
+- Plugin Zabbix pour Grafana
+- Script de sauvegarde automatisé
+- Script de vérification des mises à jour
+- Tests de supervision validés
 Cet environnement me sert de base pour mes futurs travaux de monitoring et d’analyse de performance.

@@ -36,8 +36,9 @@ sudo apt install -y zabbix-server-mysql zabbix-frontend-php zabbix-apache-conf z
 
 ---
 ### 3.3 Sécurisation de MariaDB
+```bash
 sudo mysql_secure_installation
-
+```
 J’accepte les options recommandées (on va que tester pas de prod).
 
 ---

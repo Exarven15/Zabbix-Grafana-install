@@ -1,5 +1,5 @@
 # Installation d’un environnement Zabbix + Grafana sur une seule VM Debian 12
-Dans ce projet, j’installe et configure un environnement complet de supervision basé sur Zabbix et Grafana.\n
+Dans ce projet, j’installe et configure un environnement complet de supervision basé sur Zabbix et Grafana.  <br>
 Le but est de mettre en place un lab fonctionnel sur une seule VM Debian 12 afin de réaliser des tests et se familiariser avec ces outils.
 
 ---

@@ -1,10 +1,8 @@
 # Installation d’un environnement Zabbix + Grafana sur une seule VM Debian 12
-
 Dans ce projet, j’installe et configure un environnement complet de supervision basé sur Zabbix et Grafana.
 Le but est de mettre en place un lab fonctionnel sur une seule VM Debian 12 afin de réaliser des tests et se familiariser avec ces outils.
 
 ## 1. Configuration de la VM
-
 Pour ce lab, j’utilise une machine virtuelle Debian 12 avec les caractéristiques suivantes :
 - 2 à 4 vCPU
 - 6 à 8 Go de RAM
@@ -13,18 +11,20 @@ Pour ce lab, j’utilise une machine virtuelle Debian 12 avec les caractéristiq
 
 ---
 ## 2. Préparation du système
-
 Je commence par mettre le système à jour et installer les outils nécessaires.
-``bash
+```bash
 sudo apt update && sudo apt upgrade -y
 sudo apt install wget curl vim gnupg lsb-release software-properties-common apt-transport-https -y
 sudo timedatectl set-timezone Europe/Paris
-``
-3. Installation de Zabbix, MariaDB et du frontend web
-3.1 Ajout du dépôt Zabbix
+```
+
+## 3. Installation de Zabbix, MariaDB et du frontend web
+### 3.1 Ajout du dépôt Zabbix
+```bash
 wget https://repo.zabbix.com/zabbix/7.0/debian/pool/main/z/zabbix-release/zabbix-release_7.0-2+debian12_all.deb
 sudo dpkg -i zabbix-release_7.0-2+debian12_all.deb
 sudo apt update
+```
 
 3.2 Installation des paquets Zabbix, MariaDB et Apache
 sudo apt install -y zabbix-server-mysql zabbix-frontend-php zabbix-apache-conf zabbix-sql-scripts zabbix-agent mariadb-server
